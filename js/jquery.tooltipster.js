@@ -101,7 +101,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 				}
 				else {
 					// the same remark as above applies : empty strings (like title="") are considered content and will be shown. Do not define any attribute at all if you want to initialize the plugin without content at start.
-					var t = self.$el.attr('title');
+					var t = self.$el.attr('data-title');
 					if(typeof t === 'undefined') t = null;
 					
 					self.setContent(t);
@@ -112,7 +112,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 				
 				self.$el
 					// strip the title off of the element to prevent the default tooltips from popping up
-					.removeAttr('title')
+					.removeAttr('data-title')
 					// to be able to find all instances on the page later (upon window events in particular)
 					.addClass('tooltipstered');
 
@@ -262,6 +262,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 							}
 							else {
 								// in case the tooltip was currently fading out, bring it back to life
+								if(self.options.beforeFadeIn) self.options.beforeFadeIn(self.$tooltip);
+
 								self.$tooltip
 									.stop()
 									.fadeIn(function(){
@@ -330,6 +332,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 						// reposition on scroll (otherwise position:fixed element's tooltips will move away form their origin) and on resize (in case position can/has to be changed)
 						$(window).on('scroll.'+ self.namespace +' resize.'+ self.namespace, function() {
 							self.positionTooltip();
+							if(self.options.onPosition) self.options.onPosition(self.$tooltip);
 						});
 						
 						// auto-close bindings
@@ -540,7 +543,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 			if (typeof content === 'object' && content !== null && this.options.contentCloning) {
 				content = content.clone(true);
 			}
-			this.content = content;
+			this.content = "";
+			if(this.options.header) this.content += this.options.header;
+			this.content += content;
+			if(this.options.footer) this.content += this.options.footer;
 		},
 		
 		insertContent: function() {
@@ -555,6 +561,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 				$d
 					.empty()
 					.append(self.content);
+
+				if(self.options.header) $d.prepend(this.options.header);
+				if(self.options.footer) $d.append(this.options.footer);
+
+				if(self.options.cleanup) self.options.cleanup($d);
+			}
+
+			if(self.options.afterContentInsert) {
+				self.options.afterContentInsert(self.$tooltip);
 			}
 		},
 		
@@ -1057,7 +1072,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 								
 								self.$el
 									.removeClass('tooltipstered')
-									.attr('title', stringifiedContent)
+									.attr('data-title', stringifiedContent)
 									.removeData('tooltipster')
 									.off('.'+ self.namespace);
 								break;
